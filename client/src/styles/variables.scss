@@ -1,0 +1,8 @@
+@import "../../../node_modules/breakpoint-sass/stylesheets/breakpoint";
+@import "./mixins/mixins";
+$fullHd: 1024px;
+$hd: 768px 1024px;
+$smallMobile: max-width 500px;
+$mobile: max-width 768px;
+$desktop: min-width 768px;
+$smallDesktop: max-width 1024px;
