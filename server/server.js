@@ -1,12 +1,12 @@
 import path from 'path';
 import express from 'express';
 import cors from 'cors';
-import database from './database/database';
+import { connect as dbConnect } from './database/database';
 import { bodyAndFilesParser } from './middleware/bodyAndFilesParser';
 
 const environment = process.env.NODE_ENV;
 const app = express();
-database.connect(() => {
+dbConnect().then(() => {
     // swagger
     if (environment === 'development') {
         const swagger = require('../swagger/swagger').swagger; // eslint-disable-line
@@ -23,6 +23,9 @@ database.connect(() => {
     // static paths
     const publicPath = express.static(path.join(__dirname, '../client/public'));
     app.use(publicPath);
+}).catch(error => {
+    console.warn(error); // eslint-disable-line
+    process.exit();
 });
 
 

@@ -1,39 +1,50 @@
 /**
  * Created by Bartlomiej Rutkowski on 03.11.16.
  */
-const config = require('../config').config;
-const mongoose = require('mongoose');
-const path = require('path');
-const fs = require('fs');
+import Sequelize from 'sequelize';
+import fs from 'fs';
+import path from 'path';
 
-const loadModels = (callback) => {
-    const models = path.join(__dirname, 'models');
-    const files = fs.readdirSync(models);
-    files.forEach(file => {
-        if(file !== '__tests__') {
-            const modelPath = path.join(models, file);
-            require(modelPath); // eslint-disable-line global-require
+const getDbConfig = () => {
+    return {
+        database: 'test',
+        username: 'test',
+        password: 'test',
+        host: '127.0.0.1',
+        logging: console.log // eslint-disable-line
+    };
+};
+
+const requireModels = (modelsPath, fileNames) => {
+    fileNames.forEach(file => {
+        if (file !== '__tests__') {
+            const modelPath = path.join(modelsPath, file);
+            require(modelPath); // eslint-disable-line
         }
     });
-    callback();
 };
 
-const connect = callback => {
-    mongoose.Promise = global.Promise;
-    if(process.env.NODE_ENV !== 'test') {
-        mongoose.connect(config.mongoURL, (error) => {
-            console.log(config.mongoURL); // eslint-disable-line
-            if (error) {
-                console.error('Please make sure Mongodb is installed and running!'); // eslint-disable-line no-console
-                throw error;
+const loadModels = () => {
+    const modelsPath = path.join(__dirname, 'models');
+    return new Promise((resolve, reject) => {
+        fs.readdir(modelsPath, (err, fileNames) => {
+            if(err) {
+                reject(err);
             }
-            loadModels(callback);
+            requireModels(modelsPath, fileNames);
+            resolve();
         });
-    } else {
-        callback();
-    }
+    });
 };
 
-module.exports = {
-    connect
+export const connect = () => {
+    const { database, username, password, host, logging } = getDbConfig();
+    const sequelize = new Sequelize(database, username, password, {
+        host,
+        dialect: 'postgres',
+        logging
+    });
+    return loadModels()
+        .then(() => sequelize.authenticate())
+        .then(() => sequelize.sync());
 };
