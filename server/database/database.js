@@ -15,27 +15,30 @@ const getDbConfig = () => {
     };
 };
 
-const requireModels = (modelsPath, fileNames) => {
+const requireModels = (sequelize, modelsPath, fileNames) => {
     fileNames.forEach(file => {
         if (file !== '__tests__') {
             const modelPath = path.join(modelsPath, file);
-            require(modelPath); // eslint-disable-line
+            const modelName = file.slice(0, -3);
+            module.exports[modelName] = sequelize.import(modelPath);
         }
     });
 };
 
-const loadModels = () => {
+const loadModels = sequelize => {
     const modelsPath = path.join(__dirname, 'models');
     return new Promise((resolve, reject) => {
         fs.readdir(modelsPath, (err, fileNames) => {
             if(err) {
                 reject(err);
             }
-            requireModels(modelsPath, fileNames);
+            requireModels(sequelize, modelsPath, fileNames);
             resolve();
         });
     });
 };
+
+const createRelationships = () => {};
 
 export const connect = () => {
     const { database, username, password, host, logging } = getDbConfig();
@@ -44,7 +47,9 @@ export const connect = () => {
         dialect: 'postgres',
         logging
     });
-    return loadModels()
+    return loadModels(sequelize)
+        .then(() => createRelationships())
         .then(() => sequelize.authenticate())
         .then(() => sequelize.sync());
 };
+
